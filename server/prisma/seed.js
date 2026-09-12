@@ -19,7 +19,7 @@ async function main() {
   const buyer1 = await prisma.user.create({
     data: {
       name: 'Priya Sharma (TechCorp)',
-      email: 'buyer1@merzado.com',
+      email: 'buyer1@techcorp.com',
       password: defaultPassword,
       role: 'BUYER',
     },
@@ -28,7 +28,7 @@ async function main() {
   const buyer2 = await prisma.user.create({
     data: {
       name: 'Rohan Mehta (Apex Retail)',
-      email: 'buyer2@merzado.com',
+      email: 'buyer2@apexlogistics.com',
       password: defaultPassword,
       role: 'BUYER',
     },
@@ -151,8 +151,8 @@ async function main() {
 
   console.log('Seed data successfully loaded!');
   console.log('--- Test Accounts ---');
-  console.log('Buyer:    buyer1@merzado.com (password: password123)');
-  console.log('Buyer:    buyer2@merzado.com (password: password123)');
+  console.log('Buyer:    buyer1@techcorp.com (password: password123)');
+  console.log('Buyer:    buyer2@apexlogistics.com (password: password123)');
   console.log('Supplier: supplier1@acme.com (password: password123)');
   console.log('Supplier: supplier2@zenith.com (password: password123)');
 }
