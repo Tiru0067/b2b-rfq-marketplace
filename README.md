@@ -2,12 +2,12 @@
 
 > A production-grade, full-stack B2B Request for Quotation (RFQ) marketplace built with React, Node.js/Express, PostgreSQL, and Prisma ORM.
 
-[![Live Frontend](https://img.shields.io/badge/Live_App-Vercel-black?logo=vercel)](https://b2b-rfq-marketplace-gamma.vercel.app)
+[![Live Frontend](https://img.shields.io/badge/Live_App-Vercel-black?logo=vercel)](https://procurex-rfq.vercel.app)
 [![Live Backend](https://img.shields.io/badge/Live_API-Render-46E3B7?logo=render)](https://b2b-rfq-marketplace-1-kq2x.onrender.com/api/health)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/Tiru0067/b2b-rfq-marketplace)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-* **Live Application URL**: [https://b2b-rfq-marketplace-gamma.vercel.app](https://b2b-rfq-marketplace-gamma.vercel.app)
+* **Live Application URL**: [https://procurex-rfq.vercel.app](https://procurex-rfq.vercel.app)
 * **Live REST API (Render)**: [https://b2b-rfq-marketplace-1-kq2x.onrender.com/api](https://b2b-rfq-marketplace-1-kq2x.onrender.com/api)
 * **Backend Health Check**: [https://b2b-rfq-marketplace-1-kq2x.onrender.com/api/health](https://b2b-rfq-marketplace-1-kq2x.onrender.com/api/health)
 
