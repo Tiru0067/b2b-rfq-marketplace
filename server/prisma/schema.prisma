@@ -1,0 +1,86 @@
+// Prisma schema file for B2B RFQ Marketplace
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User roles in our marketplace
+enum Role {
+  BUYER
+  SUPPLIER
+}
+
+// Current status of an RFQ
+enum RfqStatus {
+  OPEN
+  CLOSED
+}
+
+// User model: holds login info and role
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(BUYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A buyer can create many RFQs
+  rfqs       Rfq[]
+  // A supplier can submit many quotations
+  quotations Quotation[]
+
+  @@map("users")
+}
+
+// RFQ model: posted by buyers who want to purchase goods
+model Rfq {
+  id               String    @id @default(cuid())
+  productName      String
+  description      String
+  quantity         Int
+  deliveryLocation String
+  deadline         DateTime
+  status           RfqStatus @default(OPEN)
+  
+  // Connect each RFQ to the buyer who created it
+  buyerId   String
+  buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  
+  // An RFQ can receive many supplier quotations
+  quotations Quotation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rfqs")
+}
+
+// Quotation model: submitted by suppliers who want to fulfill an RFQ
+model Quotation {
+  id           String   @id @default(cuid())
+  price        Float
+  deliveryDays Int
+  notes        String
+
+  // Connect quotation to the RFQ
+  rfqId        String
+  rfq          Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  // Connect quotation to the supplier who submitted it
+  supplierId   String
+  supplier     User     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // A supplier can submit only one quote per RFQ
+  @@unique([rfqId, supplierId])
+  @@map("quotations")
+}
