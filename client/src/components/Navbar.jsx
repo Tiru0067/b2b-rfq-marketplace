@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import {
-  Layers,
   FileText,
   Send,
   LogOut,
@@ -32,9 +31,11 @@ const Navbar = ({ onCreateRfqClick }) => {
           {/* Brand Logo & Name (Neutral Professional Brand) */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center text-white shadow-sm">
-                <Layers className="w-5 h-5" />
-              </div>
+              <img
+                src="/favicon.svg"
+                alt="ProcureX"
+                className="w-9 h-9 rounded-xl shadow-sm"
+              />
               <div>
                 <span className="text-base font-bold text-typography-900 tracking-tight block leading-tight">
                   ProcureX
