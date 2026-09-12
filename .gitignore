@@ -22,6 +22,10 @@ yarn-error.log*
 .eslintcache
 .vite/
 
+# Deployment cache
+.vercel
+.vercel/
+
 # OS files
 .DS_Store
 Thumbs.db
