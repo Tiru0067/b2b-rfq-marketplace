@@ -10,6 +10,7 @@ import EmptyState from '../components/EmptyState';
 import ErrorBanner from '../components/ErrorBanner';
 import CreateRfqModal from '../components/CreateRfqModal';
 import EditRfqModal from '../components/EditRfqModal';
+import ReopenRfqModal from '../components/ReopenRfqModal';
 import {
   Plus,
   FileText,
@@ -33,6 +34,7 @@ const BuyerDashboard = () => {
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingRfq, setEditingRfq] = useState(null);
+  const [rfqToReopen, setRfqToReopen] = useState(null);
 
   // Load the buyer's RFQs from the backend
   const loadRfqs = useCallback(async () => {
@@ -78,17 +80,48 @@ const BuyerDashboard = () => {
   }, []);
 
   // Handle toggle status (Open <-> Closed)
-  const handleToggleStatus = async (rfqId, currentStatus) => {
-    const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
-    try {
-      const res = await updateRfqStatus(rfqId, newStatus);
-      if (res.success) {
-        setRfqs((prev) =>
-          prev.map((item) => (item.id === rfqId ? { ...item, status: newStatus } : item))
-        );
+  const handleToggleStatus = async (rfq) => {
+    if (rfq.status === 'CLOSED') {
+      // If deadline has expired, ask buyer to set a new deadline
+      if (new Date(rfq.deadline) <= new Date()) {
+        setRfqToReopen(rfq);
+        return;
       }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update RFQ status');
+      try {
+        const res = await updateRfqStatus(rfq.id, 'OPEN');
+        if (res.success) {
+          setRfqs((prev) =>
+            prev.map((item) => (item.id === rfq.id ? { ...item, status: 'OPEN' } : item))
+          );
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to reopen RFQ');
+      }
+    } else {
+      try {
+        const res = await updateRfqStatus(rfq.id, 'CLOSED');
+        if (res.success) {
+          setRfqs((prev) =>
+            prev.map((item) => (item.id === rfq.id ? { ...item, status: 'CLOSED' } : item))
+          );
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to close RFQ');
+      }
+    }
+  };
+
+  const handleReopenWithDeadline = async (newDeadline) => {
+    if (!rfqToReopen) return;
+    const res = await updateRfqStatus(rfqToReopen.id, 'OPEN', newDeadline);
+    if (res.success) {
+      setRfqs((prev) =>
+        prev.map((item) =>
+          item.id === rfqToReopen.id
+            ? { ...item, status: 'OPEN', deadline: newDeadline }
+            : item
+        )
+      );
     }
   };
 
@@ -310,7 +343,7 @@ const BuyerDashboard = () => {
                     </button>
 
                     <button
-                      onClick={() => handleToggleStatus(rfq.id, rfq.status)}
+                      onClick={() => handleToggleStatus(rfq)}
                       className="px-3 py-1.5 text-xs font-semibold text-typography-700 hover:bg-slate-100 rounded-xl border border-border-default transition-colors cursor-pointer"
                     >
                       {rfq.status === 'OPEN' ? 'Close RFQ' : 'Reopen'}
@@ -352,6 +385,17 @@ const BuyerDashboard = () => {
               prev.map((item) => (item.id === updatedRfq.id ? { ...item, ...updatedRfq } : item))
             );
           }}
+        />
+      )}
+
+      {/* Reopen RFQ Modal */}
+      {rfqToReopen && (
+        <ReopenRfqModal
+          key={rfqToReopen.id}
+          isOpen={true}
+          rfq={rfqToReopen}
+          onClose={() => setRfqToReopen(null)}
+          onConfirm={handleReopenWithDeadline}
         />
       )}
     </div>

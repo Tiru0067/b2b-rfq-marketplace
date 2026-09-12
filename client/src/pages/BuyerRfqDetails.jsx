@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchBuyerRfqDetails, updateRfqStatus } from '../api/rfqApi';
+import { fetchBuyerRfqDetails, updateRfqStatus, awardQuotation } from '../api/rfqApi';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import ErrorBanner from '../components/ErrorBanner';
+import ReopenRfqModal from '../components/ReopenRfqModal';
 import {
   ArrowLeft,
   Calendar,
@@ -16,6 +17,7 @@ import {
   Zap,
   Building2,
   FileCheck2,
+  CheckCircle2,
 } from 'lucide-react';
 
 const BuyerRfqDetails = () => {
@@ -23,6 +25,8 @@ const BuyerRfqDetails = () => {
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reopenModalOpen, setReopenModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const loadDetails = async () => {
     setLoading(true);
@@ -72,14 +76,60 @@ const BuyerRfqDetails = () => {
 
   const handleToggleStatus = async () => {
     if (!rfq) return;
-    const newStatus = rfq.status === 'OPEN' ? 'CLOSED' : 'OPEN';
-    try {
-      const res = await updateRfqStatus(rfq.id, newStatus);
-      if (res.success) {
-        setRfq((prev) => ({ ...prev, status: newStatus }));
+
+    if (rfq.status === 'CLOSED') {
+      // Check if deadline has passed
+      if (new Date(rfq.deadline) <= new Date()) {
+        setReopenModalOpen(true);
+        return;
       }
-    } catch {
-      alert('Failed to update RFQ status');
+      try {
+        const res = await updateRfqStatus(rfq.id, 'OPEN');
+        if (res.success) {
+          setRfq((prev) => ({ ...prev, status: 'OPEN' }));
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to reopen RFQ');
+      }
+    } else {
+      try {
+        const res = await updateRfqStatus(rfq.id, 'CLOSED');
+        if (res.success) {
+          setRfq((prev) => ({ ...prev, status: 'CLOSED' }));
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to close RFQ');
+      }
+    }
+  };
+
+  const handleReopenWithDeadline = async (newDeadline) => {
+    const res = await updateRfqStatus(rfq.id, 'OPEN', newDeadline);
+    if (res.success) {
+      setRfq((prev) => ({
+        ...prev,
+        status: 'OPEN',
+        deadline: newDeadline,
+      }));
+    }
+  };
+
+  const handleAwardQuote = async (quoteId, supplierName, price) => {
+    const confirmed = window.confirm(
+      `Award contract to ${supplierName} for ₹${price.toLocaleString('en-IN')}?\n\nThis will mark this quote as Awarded and automatically close the RFQ to new bids.`
+    );
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    try {
+      const res = await awardQuotation(rfq.id, quoteId);
+      if (res.success) {
+        setRfq(res.data);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to award quotation');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -186,13 +236,23 @@ const BuyerRfqDetails = () => {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {quotes.map((quote) => {
-                  const isCheapest = quote.price === lowestPrice;
-                  const isFastest = quote.deliveryDays === fastestDays;
+                  const isAwarded = quote.status === 'AWARDED';
+                  const isNotSelected = quote.status === 'NOT_SELECTED';
+                  const isMultiple = quotes.length > 1;
+                  const isCheapest = isMultiple && quote.price === lowestPrice;
+                  const isFastest = isMultiple && quote.deliveryDays === fastestDays;
+                  const isStandard =
+                    isMultiple && !isCheapest && !isFastest && !isAwarded && !isNotSelected;
+                  const isSingle = !isMultiple && !isAwarded && !isNotSelected;
 
                   return (
                     <div
                       key={quote.id}
-                      className="bg-white rounded-2xl border border-border-default p-5 sm:p-6 shadow-sm space-y-4"
+                      className={`bg-white rounded-2xl border ${
+                        isAwarded
+                          ? 'border-emerald-300 ring-1 ring-emerald-200'
+                          : 'border-border-default'
+                      } p-5 sm:p-6 shadow-sm space-y-4`}
                     >
                       {/* Top Badges & Supplier Info */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -216,19 +276,59 @@ const BuyerRfqDetails = () => {
                           </p>
                         </div>
 
-                        {/* Smart Highlights: Lowest Bid & Fastest Lead Time */}
-                        <div className="flex items-center gap-2">
-                          {isCheapest && (
+                        {/* Smart Highlights, Award Status, and Award Deal action */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isAwarded && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-full text-xs font-semibold">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              Awarded
+                            </span>
+                          )}
+                          {isNotSelected && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-typography-400 border border-slate-200 rounded-full text-xs font-medium">
+                              Not Selected
+                            </span>
+                          )}
+                          {!isAwarded && !isNotSelected && isCheapest && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
                               <Sparkles className="w-3.5 h-3.5" />
                               Lowest Bid
                             </span>
                           )}
-                          {isFastest && (
+                          {!isAwarded && !isNotSelected && isFastest && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-bold">
                               <Zap className="w-3.5 h-3.5" />
                               Fastest Delivery
                             </span>
+                          )}
+                          {isStandard && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-typography-600 border border-slate-200 rounded-full text-xs font-medium">
+                              Standard Bid
+                            </span>
+                          )}
+                          {isSingle && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-typography-600 border border-slate-200 rounded-full text-xs font-medium">
+                              Single Bid
+                            </span>
+                          )}
+
+                          {/* Award Deal action button (when RFQ is open) */}
+                          {rfq.status === 'OPEN' && (
+                            <button
+                              type="button"
+                              disabled={actionLoading}
+                              onClick={() =>
+                                handleAwardQuote(
+                                  quote.id,
+                                  quote.supplier.name,
+                                  quote.price
+                                )
+                              }
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Award Deal
+                            </button>
                           )}
                         </div>
                       </div>
@@ -280,6 +380,17 @@ const BuyerRfqDetails = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Reopen RFQ Modal */}
+      {rfq && reopenModalOpen && (
+        <ReopenRfqModal
+          key={rfq.id}
+          isOpen={true}
+          rfq={rfq}
+          onClose={() => setReopenModalOpen(false)}
+          onConfirm={handleReopenWithDeadline}
+        />
       )}
     </div>
   );

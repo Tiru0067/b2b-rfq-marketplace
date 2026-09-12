@@ -5,6 +5,7 @@ import {
   getRfqDetails,
   updateRfq,
   updateRfqStatus,
+  awardQuotation,
 } from '../controllers/rfqController.js';
 import { submitQuotation } from '../controllers/quotationController.js';
 import { authenticate, requireRole } from '../middlewares/authMiddleware.js';
@@ -51,6 +52,14 @@ router.patch(
   requireRole('BUYER'),
   validateBody(updateRfqStatusSchema),
   updateRfqStatus
+);
+
+// Award RFQ to a specific quotation (Buyer only)
+router.patch(
+  '/:id/award/:quoteId',
+  authenticate,
+  requireRole('BUYER'),
+  awardQuotation
 );
 
 // --- Supplier Actions ---

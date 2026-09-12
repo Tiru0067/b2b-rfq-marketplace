@@ -91,13 +91,16 @@ export const getSupplierQuotations = async (req, res, next) => {
           select: {
             id: true,
             productName: true,
+            description: true,
             quantity: true,
             deliveryLocation: true,
             deadline: true,
             status: true,
             buyer: {
               select: {
+                id: true,
                 name: true,
+                email: true,
               },
             },
           },

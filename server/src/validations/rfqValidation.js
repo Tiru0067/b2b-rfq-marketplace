@@ -45,4 +45,13 @@ export const updateRfqStatusSchema = z.object({
   status: z.enum(['OPEN', 'CLOSED'], {
     errorMap: () => ({ message: 'Status must be OPEN or CLOSED' }),
   }),
+  deadline: z
+    .string()
+    .refine((dateString) => !isNaN(Date.parse(dateString)), {
+      message: 'Please provide a valid deadline date',
+    })
+    .refine((dateString) => new Date(dateString) > new Date(), {
+      message: 'Deadline must be a future date and time',
+    })
+    .optional(),
 });

@@ -52,8 +52,15 @@ export const updateRfq = async (id, data) => {
   return response.data;
 };
 
-// Change RFQ status between OPEN and CLOSED (Buyer only)
-export const updateRfqStatus = async (id, status) => {
-  const response = await api.patch(`/rfqs/${id}/status`, { status });
+// Change RFQ status between OPEN and CLOSED, with optional new deadline (Buyer only)
+export const updateRfqStatus = async (id, status, deadline = null) => {
+  const payload = { status, ...(deadline && { deadline }) };
+  const response = await api.patch(`/rfqs/${id}/status`, payload);
+  return response.data;
+};
+
+// Award RFQ to a specific quotation (Buyer only)
+export const awardQuotation = async (rfqId, quoteId) => {
+  const response = await api.patch(`/rfqs/${rfqId}/award/${quoteId}`);
   return response.data;
 };

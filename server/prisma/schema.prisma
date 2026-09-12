@@ -62,23 +62,31 @@ model Rfq {
   @@map("rfqs")
 }
 
+// Status of a submitted quotation
+enum QuoteStatus {
+  PENDING
+  AWARDED
+  NOT_SELECTED
+}
+
 // Quotation model: submitted by suppliers who want to fulfill an RFQ
 model Quotation {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   price        Float
   deliveryDays Int
   notes        String
+  status       QuoteStatus @default(PENDING)
 
   // Connect quotation to the RFQ
   rfqId        String
-  rfq          Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  rfq          Rfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
 
   // Connect quotation to the supplier who submitted it
   supplierId   String
-  supplier     User     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier     User        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   // A supplier can submit only one quote per RFQ
   @@unique([rfqId, supplierId])
